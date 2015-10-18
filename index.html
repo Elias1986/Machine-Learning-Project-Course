@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Machine-learning-project-course by Elias1986</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Machine-learning-project-course</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/Elias1986/Machine-Learning-Project-Course" class="btn">View on GitHub</a>
+      <a href="https://github.com/Elias1986/Machine-Learning-Project-Course/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/Elias1986/Machine-Learning-Project-Course/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="doctype-html" class="anchor" href="#doctype-html" aria-hidden="true"><span class="octicon octicon-link"></span></a>&lt;!DOCTYPE html&gt;</h1>
+
+<p></p>
+
+<p></p>
+
+<p>
+
+</p>
+
+<p></p>
+
+
+
+<p>
+</p>
+
+
+
+
+
+
+
+code{white-space: pre;}
+
+<p></p>
+
+
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+
+
+<div>
+
+
+
+
+<div id="practical-machine-learning---course-project">
+<h2>
+<a id="practical-machine-learning---course-project" class="anchor" href="#practical-machine-learning---course-project" aria-hidden="true"><span class="octicon octicon-link"></span></a>Practical Machine Learning - Course Project</h2>
+<p><strong>Elias CO, Oct 17, 2015</strong></p>
+<hr>
+</div>
+
+<div id="executive-summary">
+<h2>
+<a id="executive-summary" class="anchor" href="#executive-summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Executive Summary</h2>
+<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively.</p>
+<p>The goal of your project is to predict the manner in which the subjects did the exercise. We will see this in the “classe” variable in the training set. This report cross validates differents variables to predict test cases.</p>
+</div>
+
+<div id="soruces">
+<h2>
+<a id="soruces" class="anchor" href="#soruces" aria-hidden="true"><span class="octicon octicon-link"></span></a>Soruces</h2>
+<p>The training data: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></p>
+<p>The test data: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></p>
+</div>
+
+<div id="loading-info-reproducibility">
+<h2>
+<a id="loading-info--reproducibility" class="anchor" href="#loading-info--reproducibility" aria-hidden="true"><span class="octicon octicon-link"></span></a>Loading Info &amp; Reproducibility</h2>
+<pre><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre><code>set.seed(1986)
+
+url_train &lt;- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+url_test &lt;- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
+
+training &lt;- read.csv(url(url_train), na.strings=c("NA","#DIV/0!",""))
+testing &lt;- read.csv(url(url_test), na.strings=c("NA","#DIV/0!",""))
+
+dim(training)</code></pre>
+<pre><code>## [1] 19622   160</code></pre>
+<pre><code>dim(testing)</code></pre>
+<pre><code>## [1]  20 160</code></pre>
+</div>
+
+<div id="define-important-variables">
+<h2>
+<a id="define-important-variables" class="anchor" href="#define-important-variables" aria-hidden="true"><span class="octicon octicon-link"></span></a>Define important variables</h2>
+<p>The nearZeroVar helps understand the 160 variables in the data so we can start defining which ones are relevant for predicting. We decide to create an index containing the name of the variables</p>
+<p>After the analysis we discover that the 7 first variables are dimensional this meaning that wont probably help us predicting. With the next code we remove the columns with null values and the 1st 7 columns that we discover didnt work for predicting.</p>
+<pre><code>for(i in c(8:ncol(training)-1)) {
+  training[,i] = as.numeric(as.character(training[,i]))
+  testing[,i] = as.numeric(as.character(testing[,i]))
+  }
+  
+index &lt;- colnames(training)
+index &lt;- colnames(training[colSums(is.na(training)) == 0])
+index &lt;- index[-c(1:7)]
+
+head(index)</code></pre>
+<pre><code>## [1] "roll_belt"        "pitch_belt"       "yaw_belt"        
+## [4] "total_accel_belt" "gyros_belt_x"     "gyros_belt_y"</code></pre>
+</div>
+
+<div id="partitioning-the-training-set">
+<h2>
+<a id="partitioning-the-training-set" class="anchor" href="#partitioning-the-training-set" aria-hidden="true"><span class="octicon octicon-link"></span></a>Partitioning the training set</h2>
+<p>We patition the training datato ensure we have a 20% to test this will help us avoid overfitting the model to the testng data after too much testing.</p>
+<pre><code>indextrain &lt;- createDataPartition(y=training$classe, p=0.80, list=FALSE)
+
+train1 &lt;- training[indextrain,index]
+train2 &lt;- training[-indextrain,index]
+
+dim(train1)</code></pre>
+<pre><code>## [1] 15699    53</code></pre>
+<pre><code>dim(train2)  </code></pre>
+<pre><code>## [1] 3923   53</code></pre>
+</div>
+
+<div id="understaing-information">
+<h2>
+<a id="understaing-information" class="anchor" href="#understaing-information" aria-hidden="true"><span class="octicon octicon-link"></span></a>Understaing Information</h2>
+<p>The graphic permits us understand that there is some relationship between the frequency in training data and the class excercise letting us know we are heading the right way.</p>
+<pre><code>library(ggplot2)
+
+qplot(classe,data = train1, geom="histogram", xlab = "Excercise Classe",ylab = "Training Data Freq", binwidth = 300)</code></pre>
+<p><img title alt width="672"></p>
+</div>
+
+<div id="random-forest-model-fitting">
+<h2>
+<a id="random-forest-model-fitting" class="anchor" href="#random-forest-model-fitting" aria-hidden="true"><span class="octicon octicon-link"></span></a>Random Forest Model Fitting</h2>
+<p>We decide to run a random model predictory model.</p>
+<pre><code>library(randomForest)</code></pre>
+<pre><code>## randomForest 4.6-12
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>rf &lt;- randomForest(classe ~ ., data = train1, ntree=50, norm.votes=FALSE)
+pred_rf &lt;- predict(rf,train2)
+cm &lt;- confusionMatrix(pred_rf,train2$classe)
+cm</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1115    5    0    0    0
+##          B    1  754    3    0    0
+##          C    0    0  679    4    0
+##          D    0    0    2  639    0
+##          E    0    0    0    0  721
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9962          
+##                  95% CI : (0.9937, 0.9979)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9952          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9991   0.9934   0.9927   0.9938   1.0000
+## Specificity            0.9982   0.9987   0.9988   0.9994   1.0000
+## Pos Pred Value         0.9955   0.9947   0.9941   0.9969   1.0000
+## Neg Pred Value         0.9996   0.9984   0.9985   0.9988   1.0000
+## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2842   0.1922   0.1731   0.1629   0.1838
+## Detection Prevalence   0.2855   0.1932   0.1741   0.1634   0.1838
+## Balanced Accuracy      0.9987   0.9961   0.9957   0.9966   1.0000</code></pre>
+<p>By reviewing the confusion matrix is really clear that we can take this model to use it for predictiong since its accurazy is 0.9962 with a very high confidence interval.</p>
+</div>
+
+<div id="test-set-solutions">
+<h2>
+<a id="test-set-solutions" class="anchor" href="#test-set-solutions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Test set solutions</h2>
+<p>We use the model for predicting in the test data.</p>
+<pre><code>final_col &lt;- length(colnames(testing[]))
+colnames(testing)[final_col] &lt;- 'classe'
+answers &lt;- predict(rf,testing[,index])
+answers</code></pre>
+<pre><code>##  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+##  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+## Levels: A B C D E</code></pre>
+</div>
+
+<div id="create-text-files">
+<h2>
+<a id="create-text-files" class="anchor" href="#create-text-files" aria-hidden="true"><span class="octicon octicon-link"></span></a>Create text files</h2>
+<p>With this we create the files for the proyect submission.</p>
+<pre><code>pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)</code></pre>
+</div>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/Elias1986/Machine-Learning-Project-Course">Machine-learning-project-course</a> is maintained by <a href="https://github.com/Elias1986">Elias1986</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
