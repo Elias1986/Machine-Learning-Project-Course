@@ -1,0 +1,141 @@
+---
+output: html_document
+---
+Practical Machine Learning - Course Project
+----------------------------------------------------
+**Elias CO, Oct 17, 2015**
+
+---
+
+##Executive Summary##
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. 
+
+The goal of your project is to predict the manner in which the subjects did the exercise. We will see this in the "classe" variable in the training set. This report cross validates differents variables to predict test cases.
+
+##Soruces##
+
+The training data: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+##Loading Info & Reproducibility
+
+```{r, echo=TRUE}
+
+library(caret)
+set.seed(1986)
+
+url_train <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+url_test <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
+
+training <- read.csv(url(url_train), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(url_test), na.strings=c("NA","#DIV/0!",""))
+
+dim(training)
+dim(testing)
+
+```
+
+##Define important variables
+
+The nearZeroVar helps understand the 160 variables in the data so we can start defining which ones are relevant for predicting. We decide to create an index containing the name of the variables
+
+```{r, echo=FALSE}
+
+#nearZeroVar(training, saveMetrics=TRUE)
+
+```
+
+After the analysis we discover that the 7 first variables are dimensional this meaning that wont probably help us predicting. With the next code we remove the columns with null values and the 1st 7 columns that we discover didnt work for predicting.
+
+```{r, echo=TRUE}
+for(i in c(8:ncol(training)-1)) {
+  training[,i] = as.numeric(as.character(training[,i]))
+  testing[,i] = as.numeric(as.character(testing[,i]))
+  }
+  
+index <- colnames(training)
+index <- colnames(training[colSums(is.na(training)) == 0])
+index <- index[-c(1:7)]
+
+head(index)
+  
+```
+
+##Partitioning the training set
+
+We patition the training datato ensure we have a 20% to test this will help us avoid overfitting the model to the testng data after too much testing.
+
+```{r, echo=TRUE}
+
+indextrain <- createDataPartition(y=training$classe, p=0.80, list=FALSE)
+
+train1 <- training[indextrain,index]
+train2 <- training[-indextrain,index]
+
+dim(train1)
+dim(train2)  
+```
+
+##Understaing Information
+
+The graphic permits us understand that there is some relationship between the frequency in training data and the class excercise letting us know we are heading the right way.
+
+```{r, echo=TRUE}
+
+library(ggplot2)
+
+qplot(classe,data = train1, geom="histogram", xlab = "Excercise Classe",ylab = "Training Data Freq", binwidth = 300)
+
+```
+
+##Random Forest Model Fitting
+
+We decide to run a random model predictory model.
+
+```{r, echo=TRUE}
+
+library(randomForest)
+
+rf <- randomForest(classe ~ ., data = train1, ntree=50, norm.votes=FALSE)
+pred_rf <- predict(rf,train2)
+cm <- confusionMatrix(pred_rf,train2$classe)
+cm
+
+```
+
+By reviewing the confusion matrix is really clear that we can take this model to use it for predictiong since its accurazy is 0.9962 with a very high confidence interval.
+
+##Test set solutions
+
+We use the model for predicting in the test data.
+
+```{r, echo=TRUE}
+
+final_col <- length(colnames(testing[]))
+colnames(testing)[final_col] <- 'classe'
+answers <- predict(rf,testing[,index])
+answers
+
+```
+
+##Create text files 
+
+With this we create the files for the proyect submission.
+
+```{r, echo=TRUE}
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)
+
+```
